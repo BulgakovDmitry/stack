@@ -26,8 +26,8 @@ struct Stack_t
 {
     CAN_PR(Canary_t L_STACK_KANAR;)
 
-    size_t   coef_capacity;
-    uint64_t error_status;
+    size_t   coefCapacity;
+    uint64_t errorStatus;
 
     StackElem_t* data;
     size_t       size;
@@ -37,6 +37,7 @@ struct Stack_t
 };
 
 const size_t START_SIZE    = 16;
+const StackElem_t POISON = -666;
 
 const Canary_t L_DATA_KANAR  = 0xEDAA;
 const Canary_t R_DATA_KANAR  = 0xF00D;
@@ -45,5 +46,10 @@ const Canary_t R_STACK_KANAR = 0x0DED;
 
 void stackCtor(Stack_t* stk);
 void stackDtor(Stack_t* stk);
+
+void stackPush(Stack_t* stk, StackElem_t value);
+
+void stackDump(Stack_t stk);
+void stackPrint(Stack_t stk);
 
 #endif
