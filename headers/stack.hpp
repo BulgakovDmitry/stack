@@ -48,8 +48,10 @@ void stackCtor(Stack_t* stk);
 void stackDtor(Stack_t* stk);
 
 void stackPush(Stack_t* stk, StackElem_t value);
+StackElem_t stackPop(Stack_t* stk);
+StackElem_t stackGet(Stack_t stk);
 
 void stackDump(Stack_t stk);
-void stackPrint(Stack_t stk);
+void stackDataDump(Stack_t stk);
 
 #endif

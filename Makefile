@@ -33,6 +33,8 @@ $(OBJ)myLib.o: $(M)myLib.cpp
 
 run: stk
 
+run_: stk
+	./structStack.out
 #----------------------------------------------------------------------------------
 clean: 
 	rm -f $(OBJ)*
