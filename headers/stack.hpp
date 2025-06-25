@@ -22,9 +22,17 @@ typedef double Canary_t;
     #define CAN_PR(...)
 #endif
 
+#ifdef STACK_VERIFY
+    #define VER(...) __VA_ARGS__
+#else
+    #define VER(...)
+#endif
+
+#define UP_TO_EIGHT(x) (x) + (8 - (x) % 8) % 8
+
 struct Stack_t
 {
-    CAN_PR(Canary_t L_STACK_KANAR;)
+    CAN_PR(Canary_t leftStackCanary;)
 
     size_t   coefCapacity;
     uint64_t errorStatus;
@@ -33,8 +41,22 @@ struct Stack_t
     size_t       size;
     size_t       capacity;
 
-    CAN_PR(Canary_t R_STACK_KANAR;)
+    CAN_PR(Canary_t rightStackCanary;)
 };
+
+enum StackError
+{
+    OK                      = 0,
+    POINTER_ERROR           = 1 << 0,
+    ALLOC_ERROR             = 1 << 1,
+    SIZE_ERROR              = 1 << 2,
+    LEFT_STACK_CANARY_DIED  = 1 << 3,
+    RIGHT_STACK_CANARY_DIED = 1 << 4,
+    LEFT_DATA_CANARY_DIED   = 1 << 5,
+    RIGHT_DATA_CANARY_DIED  = 1 << 6
+};
+
+const size_t NUMBER_OF_ERRORS = 7;
 
 const size_t START_SIZE    = 16;
 const StackElem_t POISON = -666;
@@ -51,7 +73,10 @@ void stackPush(Stack_t* stk, StackElem_t value);
 StackElem_t stackPop(Stack_t* stk);
 StackElem_t stackGet(Stack_t stk);
 
+uint64_t stackVerify(Stack_t* stk);
+
 void stackDump(Stack_t stk);
 void stackDataDump(Stack_t stk);
+StackError stackErrorDump(Stack_t stk);
 
 #endif

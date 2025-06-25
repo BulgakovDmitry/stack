@@ -5,7 +5,7 @@ void stackCtor(Stack_t* stk)
 {
     DBG(ASSERT(stk, "stk = nullptr", stderr);)
 
-    CAN_PR(stk->L_STACK_KANAR = L_STACK_KANAR;)
+    CAN_PR(stk->leftStackCanary = L_STACK_KANAR;)
 
     stk->coefCapacity = 2;
     stk->size = 0;
@@ -20,7 +20,7 @@ void stackCtor(Stack_t* stk)
 
     stk->errorStatus = 0;
 
-    CAN_PR(stk->R_STACK_KANAR = R_STACK_KANAR;)
+    CAN_PR(stk->rightStackCanary = R_STACK_KANAR;)
 }
 
 void stackDtor(Stack_t* stk)
@@ -34,8 +34,8 @@ void stackDtor(Stack_t* stk)
     stk->size = 0;
     stk->capacity = 0;
     stk->data = 0;
-    CAN_PR(stk->L_STACK_KANAR = 0;)
-    CAN_PR(stk->R_STACK_KANAR = 0;)
+    CAN_PR(stk->leftStackCanary = 0;)
+    CAN_PR(stk->rightStackCanary = 0;)
     stk = nullptr;
 }
 
@@ -93,8 +93,8 @@ StackElem_t stackGet(Stack_t stk)
 void stackDump(Stack_t stk)
 {
     printf("%s___stackDump___~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%s\n", RED, RESET);
-    CAN_PR(printf("%s{%sL_STACK_KANAR %s= %s%X%s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.L_STACK_KANAR, RESET);)
-    CAN_PR(printf("%s, %sR_STACK_KANAR %s= %s%X%s}%s\n", GREEN, BLUE, GREEN, RED, (unsigned int)stk.R_STACK_KANAR, GREEN, RESET);)
+    CAN_PR(printf("%s{%sL_STACK_KANAR %s= %s%X%s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.leftStackCanary, RESET);)
+    CAN_PR(printf("%s, %sR_STACK_KANAR %s= %s%X%s}%s\n", GREEN, BLUE, GREEN, RED, (unsigned int)stk.rightStackCanary, GREEN, RESET);)
     printf("%s{%sL_DATA_KANAR %s = %s%X%s, %s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.data[0], GREEN, RESET);
     printf("%sR_DATA_KANAR %s = %s%X%s}%s\n", BLUE, GREEN, RED, (unsigned int)stk.data[stk.capacity - 1], GREEN, RESET);
 
@@ -117,9 +117,68 @@ void stackDataDump(Stack_t stk)
     printf("%s}%s\n", GREEN, RESET);
     
     printf("%sstk.data%s[%s0%s]            = %s%lg %s[ %shex%s %X%s ]%s", BLUE, GREEN, MANG, GREEN, RED, stk.data[0], MANG, BLUE, RED, (unsigned int)stk.data[0], MANG, RESET);
-    CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (const int)L_DATA_KANAR, MANG, RESET);)
+    CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (unsigned int)L_DATA_KANAR, MANG, RESET);)
     putchar('\n');
     printf("%sstk.data%s[%scapacity - 1%s] = %s%lg %s[ %shex%s %X%s ]%s", BLUE, GREEN, MANG, GREEN, RED, stk.data[stk.capacity - 1], MANG, BLUE, RED, (unsigned int)stk.data[stk.capacity - 1], MANG, RESET);
-    CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (const int)R_DATA_KANAR, MANG, RESET);)
+    CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (unsigned int)R_DATA_KANAR, MANG, RESET);)
     putchar('\n');
+}
+
+
+uint64_t stackVerify(Stack_t* stk)
+{
+    if (stk == NULL)
+    return POINTER_ERROR;
+    
+    if (stk->size > stk->capacity)
+    stk->errorStatus |= SIZE_ERROR;
+    
+    CAN_PR
+    (
+        Canary_t trueCanaryValue = (Canary_t)L_STACK_KANAR;
+        if (memcmp(&stk->leftStackCanary, &trueCanaryValue, sizeof(Canary_t)) != 0)
+            stk->errorStatus |= LEFT_STACK_CANARY_DIED;
+            
+            if (memcmp(&stk->rightStackCanary, &trueCanaryValue, sizeof(Canary_t)) != 0)
+            stk->errorStatus |= RIGHT_STACK_CANARY_DIED;
+            
+            if (stk->data == NULL)
+            {
+                if (stk -> capacity == 0)
+                return OK;
+                else
+                return POINTER_ERROR;
+            }
+            
+            Canary_t trueDataCanaryValue = (Canary_t)L_DATA_KANAR;
+            size_t alignedByteCapacity = UP_TO_EIGHT(stk->capacity * sizeof(StackElem_t));
+            
+            if (memcmp((char*)stk->data, &trueDataCanaryValue, sizeof(Canary_t)) != 0)
+            stk->errorStatus |= LEFT_DATA_CANARY_DIED;
+            
+            if (memcmp((char*)stk->data + alignedByteCapacity - sizeof(Canary_t), &trueDataCanaryValue, sizeof(Canary_t)) != 0)
+            stk->errorStatus |= RIGHT_DATA_CANARY_DIED;
+        )
+        
+        return stk->errorStatus;
+    }
+    
+static const char* stackErrors[9] = {
+                                        "POINTER_ERROR",
+                                        "ALLOC_ERROR",
+                                        "SIZE_ERROR",
+                                        "LEFT_STACK_CANARY_DIED",
+                                        "RIGHT_STACK_CANARY_DIED",
+                                        "LEFT_DATA_CANARY_DIED",
+                                        "RIGHT_DATA_CANARY_DIED"
+                                    };
+StackError stackErrorDump(Stack_t stk)
+{
+    for (size_t i = 0; i < NUMBER_OF_ERRORS; i++)
+    {
+        if (stk.errorStatus & (1 << i))
+            fprintf(stderr, RED"error: code %d ( %s )\n"RESET, i, stackErrors[i]);
+    }
+
+    return OK;
 }
