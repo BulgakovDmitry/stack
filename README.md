@@ -55,7 +55,7 @@ stack/
 └── myLib/              # Helper library
 ```
 
-Usage example:
+## 💡 Usage example:
 ```cpp
 #include "../headers/stack.hpp"
 
