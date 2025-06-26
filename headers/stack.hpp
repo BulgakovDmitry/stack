@@ -69,14 +69,13 @@ const Canary_t R_STACK_KANAR = 0x0DED;
 void stackCtor(Stack_t* stk);
 void stackDtor(Stack_t* stk);
 
-void stackPush(Stack_t* stk, StackElem_t value);
+StackError  stackPush(Stack_t* stk, StackElem_t value);
 StackElem_t stackPop(Stack_t* stk);
 StackElem_t stackGet(Stack_t stk);
 
 uint64_t stackVerify(Stack_t* stk);
 
 void stackDump(Stack_t stk);
-void stackDataDump(Stack_t stk);
 StackError stackErrorDump(Stack_t stk);
 
 #endif
