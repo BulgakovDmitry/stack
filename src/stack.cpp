@@ -1,5 +1,6 @@
 #include "../headers/stack.hpp"
 #include "../myLib/myLib.hpp"
+#include <math.h>
 
 void stackCtor(Stack_t* stk)
 {
@@ -200,13 +201,31 @@ StackElem_t stackPop(Stack_t* stk)
     return temp;
 }
 
-StackElem_t stackGet(Stack_t stk)
+StackElem_t stackGet(const Stack_t* stk)
 {
-    if (stk.size > 1)
-        return stk.data[stk.size];  
+    if (!stk) 
+    {
+        DBG(fprintf(stderr, RED "Error: nullptr passed to stackGet\n" RESET);)
+        return POISON;
+    }
 
-    printf(RED"STACK IS EMPTY\n"RESET);
-    return POISON;
+    StackError verifyError = (StackError)stackVerify(const_cast<Stack_t*>(stk));
+    if (verifyError != OK) // Checking the Status of the Stack
+    {
+        DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
+        stackDump(*stk);
+        stackErrorDump(*stk);
+        return POISON;
+    }
+
+    if (stk->size == 0) 
+    {
+        DBG(printf(RED "STACK IS EMPTY\n" RESET);)
+        (const_cast<Stack_t*>(stk))->errorStatus |= EMPTY_STACK;
+        return POISON;
+    }
+
+    return stk->data[stk->size];
 }
 
 static void stackDataDump(Stack_t stk)
@@ -254,10 +273,10 @@ uint64_t stackVerify(Stack_t* stk)
     
     CAN_PR
     (
-        if (stk->leftStackCanary != L_STACK_KANAR)
+        if (fabs(stk->leftStackCanary - L_STACK_KANAR) > DOUBLE_EPSILON)
             errors |= LEFT_STACK_CANARY_DIED;
             
-        if (stk->rightStackCanary != R_STACK_KANAR)
+        if (fabs(stk->rightStackCanary - R_STACK_KANAR) > DOUBLE_EPSILON)
             errors |= RIGHT_STACK_CANARY_DIED;
         
         if (!stk->data)
@@ -267,15 +286,15 @@ uint64_t stackVerify(Stack_t* stk)
         }
         else 
         {
-            if (stk->data[0] != L_DATA_KANAR)                  // check left data canary
-                errors |= LEFT_DATA_CANARY_DIED;               // 
+            if (fabs(stk->data[0] - L_DATA_KANAR) > DOUBLE_EPSILON)                  // check left data canary
+                errors |= LEFT_DATA_CANARY_DIED;                                     // 
                 
-            if (stk->data[stk->capacity - 1] != R_DATA_KANAR)  // check right data canary
-                errors |= RIGHT_DATA_CANARY_DIED;              // 
+            if (fabs(stk->data[stk->capacity - 1] - R_DATA_KANAR) > DOUBLE_EPSILON)  // check right data canary
+                errors |= RIGHT_DATA_CANARY_DIED;                                    // 
             
             for (size_t i = stk->size + 1; i < stk->capacity - 1; i++) // check poison elem
             {
-                if (stk->data[i] != POISON)
+                if (fabs(stk->data[i] - POISON) > DOUBLE_EPSILON)
                 {
                     errors |= SIZE_ERROR;
                     break;
@@ -304,7 +323,7 @@ StackError stackErrorDump(Stack_t stk)
     for (size_t i = 0; i < NUMBER_OF_ERRORS; i++)
     {
         if (stk.errorStatus & (1 << i))
-            fprintf(stderr, RED"error: code %zu ( %s )\n"RESET, i, stackErrors[i]);
+            fprintf(stderr, RED"error: code %zu ( %s )\n"RESET, i + 1, stackErrors[i]);
     }
 
     return OK;

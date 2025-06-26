@@ -62,6 +62,7 @@ const size_t NUMBER_OF_ERRORS = 8;
 const size_t START_SIZE       = 16;
 const StackElem_t POISON      = -666;
 const size_t REDUCER_CAPACITY = 2;
+const double DOUBLE_EPSILON  = 1e-9;
 
 const Canary_t L_DATA_KANAR  = 0xEDAA;
 const Canary_t R_DATA_KANAR  = 0xF00D;
@@ -73,7 +74,7 @@ void stackDtor(Stack_t* stk);
 
 StackError  stackPush(Stack_t* stk, StackElem_t value);
 StackElem_t stackPop(Stack_t* stk);
-StackElem_t stackGet(Stack_t stk);
+StackElem_t stackGet(const Stack_t* stk);
 
 uint64_t stackVerify(Stack_t* stk);
 
