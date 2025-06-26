@@ -38,20 +38,30 @@ void stackCtor(Stack_t* stk)
 
 void stackDtor(Stack_t* stk)
 {
-    ASSERT(stk, "stk = nullptr", stderr);
+    if (!stk) 
+    {
+        DBG(fprintf(stderr, RED "stk = nullptr, it is impossible to delete null stack\n" RESET);)
+        return;
+    }
 
-    DBG(ASSERT(stk->data, "stk->data = nullptr", stderr);)
-    FREE(stk->data);
+    if (stk->data)
+        FREE(stk->data);
+    DBG
+    (
+        else
+        fprintf(stderr, RED"stk->data = nullptr"RESET);
+    )
 
     stk->coefCapacity = 0;
     stk->size = 0;
     stk->capacity = 0;
-    stk->data = 0;
+
     CAN_PR(
         stk->leftStackCanary = 0;
         stk->rightStackCanary = 0;
     )
-    stk = nullptr;
+
+    stk->errorStatus = OK;
 }
 
 StackError stackPush(Stack_t* stk, StackElem_t value)
@@ -62,7 +72,6 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         return POINTER_ERROR;
 
     StackError verifyError = (StackError)stackVerify(stk);
-
     if (verifyError != OK)
     {
         stackDump(*stk);
@@ -78,8 +87,7 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         )
 
         size_t newCapacity = stk->capacity * stk->coefCapacity;
-        StackElem_t* newData = (StackElem_t*)realloc(stk->data, (stk->capacity) * sizeof(StackElem_t));
-
+        StackElem_t* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
         if (!newData)
         {
             CAN_PR(     
@@ -88,7 +96,6 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
             )
             
             stk->errorStatus |= ALLOC_ERROR;
-            stackDump(*stk);
             return ALLOC_ERROR;
         }
 
@@ -104,8 +111,8 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         )
     }    
    
-    stk->data[stk->size + 1] = value;
     stk->size++;
+    stk->data[stk->size] = value;
 
     if ((verifyError = (StackError)stackVerify(stk)) != OK) // final check
     {
@@ -120,18 +127,25 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
 
 StackElem_t stackPop(Stack_t* stk)
 {
-    StackError verifyError = (StackError)stackVerify(stk);
-    if (verifyError != OK || stk == nullptr || stk->size == 0)
+    if (!stk) 
     {
-        if (verifyError != OK)
-        {
-            stackDump(*stk);
-            stackErrorDump(*stk);
-        }
-        else if (stk != nullptr && stk->size == 0)
-        {
-            fprintf(stderr, RED "Error: stack underflow (attempt to pop from empty stack)\n" RESET);
-        }
+        DBG(fprintf(stderr, RED "Error: nullptr passed to stackPop\n" RESET);)
+        return POISON;
+    }
+
+    StackError verifyError = (StackError)stackVerify(stk);
+    if (verifyError != OK) // Checking the Status of the Stack
+    {
+        DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
+        stackDump(*stk);
+        stackErrorDump(*stk);
+        return POISON;
+    }
+    if (stk->size == 0) // Checking if stack is empty
+    {
+        DBG(fprintf(stderr, RED "Error: stack is empty\n" RESET);)
+        stk->errorStatus |= EMPTY_STACK;
+        stackErrorDump(*stk);
         return POISON;
     }
     
@@ -139,16 +153,16 @@ StackElem_t stackPop(Stack_t* stk)
     stk->data[stk->size] = POISON;   
     stk->size--;
 
-    if (stk->size < stk->capacity / stk->coefCapacity && stk->capacity > START_SIZE)
+    if (stk->size < stk->capacity / (REDUCER_CAPACITY * stk->coefCapacity) && stk->capacity > START_SIZE)
     {
         CAN_PR(
             stk->data[0] = POISON; // REMOVING THE OLD LEFT CANARY
             stk->data[stk->capacity - 1] = POISON; // REMOVING RIGHT CANARY LINE (CHANGE TO POISON)
         )
         
-        stk->capacity /= stk->coefCapacity; // DECREASE capacity
+        size_t newCapacity = stk->capacity / stk->coefCapacity;
 
-        StackElem_t* newData = (StackElem_t*)realloc(stk->data, stk->capacity * sizeof(StackElem_t));
+        StackElem_t* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
         if (!newData)
         {
             stk->capacity *= stk->coefCapacity; // save the old capacity (since realloc failed)
@@ -164,6 +178,7 @@ StackElem_t stackPop(Stack_t* stk)
         else
         {
             stk->data = newData;
+            stk->capacity = newCapacity;
             
             CAN_PR(
                 stk->data[0] = L_DATA_KANAR;
@@ -177,6 +192,7 @@ StackElem_t stackPop(Stack_t* stk)
 
     if (stackVerify(stk) != OK)
     {
+        DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
         stackDump(*stk);
         stackErrorDump(*stk);
     }
@@ -218,7 +234,7 @@ void stackDump(Stack_t stk)
     printf("%s{%sL_DATA_KANAR %s = %s%X%s, %s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.data[0], GREEN, RESET);
     printf("%sR_DATA_KANAR %s = %s%X%s}%s\n", BLUE, GREEN, RED, (unsigned int)stk.data[stk.capacity - 1], GREEN, RESET);
 
-    printf("%scapasity %s= %s%zu%s\n", BLUE, GREEN, RED, stk.capacity, RESET);
+    printf("%scapasity %s= %s%zu%s  ", BLUE, GREEN, RED, stk.capacity, RESET);
     printf("%ssize %s= %s%zu%s\n", BLUE, GREEN, RED, stk.size, RESET);
     printf("%sdata %s[%s%p%s]%s\n", CEAN, GREEN, MANG, stk.data, GREEN, RESET);
 

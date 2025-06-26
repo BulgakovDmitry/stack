@@ -53,13 +53,15 @@ enum StackError
     LEFT_STACK_CANARY_DIED  = 1 << 3,
     RIGHT_STACK_CANARY_DIED = 1 << 4,
     LEFT_DATA_CANARY_DIED   = 1 << 5,
-    RIGHT_DATA_CANARY_DIED  = 1 << 6
+    RIGHT_DATA_CANARY_DIED  = 1 << 6,
+    EMPTY_STACK             = 1 << 7
 };
 
-const size_t NUMBER_OF_ERRORS = 7;
+const size_t NUMBER_OF_ERRORS = 8;
 
-const size_t START_SIZE    = 16;
-const StackElem_t POISON = -666;
+const size_t START_SIZE       = 16;
+const StackElem_t POISON      = -666;
+const size_t REDUCER_CAPACITY = 2;
 
 const Canary_t L_DATA_KANAR  = 0xEDAA;
 const Canary_t R_DATA_KANAR  = 0xF00D;
