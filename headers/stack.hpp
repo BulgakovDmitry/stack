@@ -11,28 +11,28 @@ typedef double Canary_t;
 #include "configFile.hpp"
 
 #ifdef STACK_DEBUG
-    #define DBG(...) __VA_ARGS__
+    #define S_DBG(...) __VA_ARGS__
 #else
-    #define DBG(...)
+    #define S_DBG(...)
 #endif
 
-#ifdef CANARY_PROTECTION
-    #define CAN_PR(...) __VA_ARGS__
+#ifdef STACK_CANARY_PROTECTION
+    #define S_CAN_PR(...) __VA_ARGS__
 #else
-    #define CAN_PR(...)
+    #define S_CAN_PR(...)
 #endif
 
 #ifdef STACK_VERIFY
-    #define VER(...) __VA_ARGS__
+    #define S_VER(...) __VA_ARGS__
 #else
-    #define VER(...)
+    #define S_VER(...)
 #endif
 
 #define UP_TO_EIGHT(x) (x) + (8 - (x) % 8) % 8
 
 struct Stack_t
 {
-    CAN_PR(Canary_t leftStackCanary;)
+    S_CAN_PR(Canary_t leftStackCanary;)
 
     size_t   coefCapacity;
     uint64_t errorStatus;
@@ -41,7 +41,7 @@ struct Stack_t
     size_t       size;
     size_t       capacity;
 
-    CAN_PR(Canary_t rightStackCanary;)
+    S_CAN_PR(Canary_t rightStackCanary;)
 };
 
 enum StackError

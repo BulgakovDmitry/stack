@@ -8,7 +8,7 @@ int main(void)
     stackPush(&stk, 5);
     stackPush(&stk, 6);
     stackPush(&stk, 7);
-
+    
     /*for (int i = 0; i < 11; i++)
         stackPush(&stk, (double)i);
 

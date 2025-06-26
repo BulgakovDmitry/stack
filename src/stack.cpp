@@ -1,12 +1,13 @@
 #include "../headers/stack.hpp"
-#include "../myLib/myLib.hpp"
+#include <myLib.hpp>
 #include <math.h>
 
 void stackCtor(Stack_t* stk)
 {
-    DBG(ASSERT(stk, "stk = nullptr", stderr);)
+    S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
 
-    CAN_PR(
+    S_CAN_PR
+    (
         stk->leftStackCanary = L_STACK_KANAR;
         stk->rightStackCanary = R_STACK_KANAR;
     )
@@ -17,11 +18,12 @@ void stackCtor(Stack_t* stk)
     stk->data = 0;
 
     stk->data = (StackElem_t*)calloc(stk->capacity, sizeof(StackElem_t));
-    DBG(ASSERT(stk->data, "data = nullptr", stderr);)
+    S_DBG(ASSERT(stk->data, "data = nullptr", stderr);)
 
-    CAN_PR(
-        stk->data[0]                 = L_DATA_KANAR;   // УСТАНОВКА ЛЕВОЙ  КАНАРЕЙКИ НА data
-        stk->data[stk->capacity - 1] = R_DATA_KANAR;   // УСТАНОВКА ПРАВОЙ КАНАРЕЙКИ НА data
+    S_CAN_PR
+    (
+        stk->data[0]                 = L_DATA_KANAR;   // INSTALLING A NEW LEFT  CANARY ON DATA
+        stk->data[stk->capacity - 1] = R_DATA_KANAR;   // INSTALLING A NEW RIGHT CANARY ON DATA
     )
 
     for (size_t i = 1; i < stk->capacity - 1; i++) 
@@ -41,13 +43,13 @@ void stackDtor(Stack_t* stk)
 {
     if (!stk) 
     {
-        DBG(fprintf(stderr, RED "stk = nullptr, it is impossible to delete null stack\n" RESET);)
+        S_DBG(fprintf(stderr, RED "stk = nullptr, it is impossible to delete null stack\n" RESET);)
         return;
     }
 
     if (stk->data)
         FREE(stk->data);
-    DBG
+    S_DBG
     (
         else
         fprintf(stderr, RED"stk->data = nullptr"RESET);
@@ -57,7 +59,8 @@ void stackDtor(Stack_t* stk)
     stk->size = 0;
     stk->capacity = 0;
 
-    CAN_PR(
+    S_CAN_PR
+    (
         stk->leftStackCanary = 0;
         stk->rightStackCanary = 0;
     )
@@ -67,7 +70,7 @@ void stackDtor(Stack_t* stk)
 
 StackError stackPush(Stack_t* stk, StackElem_t value)
 {
-    DBG(ASSERT(stk, "stk = nullptr", stderr);)
+    S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
 
     if (!stk)
         return POINTER_ERROR;
@@ -82,7 +85,8 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
 
     if (stk->size >= stk->capacity - 2) // CHECKING FOR IMPLEMENTATION
     {    
-        CAN_PR(
+        S_CAN_PR
+        (
             stk->data[0] = POISON;                  // REMOVAL OF OLD LEFT CANARY
             stk->data[stk->capacity - 1] = POISON;  // REMOVING THE RIGHT CANARY LINE (CHANGE TO POISON)
         )
@@ -91,7 +95,8 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         StackElem_t* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
         if (!newData)
         {
-            CAN_PR(     
+            S_CAN_PR
+            (     
                 stk->data[0] = L_DATA_KANAR;
                 stk->data[stk->capacity - 1] = R_DATA_KANAR;
             )
@@ -106,7 +111,8 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         for (size_t i = stk->size + 1; i < stk->capacity - 1; i++) // Initialize new memory
             stk->data[i] = POISON;
 
-        CAN_PR(
+        S_CAN_PR
+        (
             stk->data[0] = L_DATA_KANAR;                 // INSTALLING A NEW LEFT  CANARY
             stk->data[stk->capacity - 1] = R_DATA_KANAR; // INSTALLING A NEW RIGHT CANARY
         )
@@ -130,21 +136,21 @@ StackElem_t stackPop(Stack_t* stk)
 {
     if (!stk) 
     {
-        DBG(fprintf(stderr, RED "Error: nullptr passed to stackPop\n" RESET);)
+        S_DBG(fprintf(stderr, RED "Error: nullptr passed to stackPop\n" RESET);)
         return POISON;
     }
 
     StackError verifyError = (StackError)stackVerify(stk);
     if (verifyError != OK) // Checking the Status of the Stack
     {
-        DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
+        S_DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
         stackDump(*stk);
         stackErrorDump(*stk);
         return POISON;
     }
     if (stk->size == 0) // Checking if stack is empty
     {
-        DBG(fprintf(stderr, RED "Error: stack is empty\n" RESET);)
+        S_DBG(fprintf(stderr, RED "Error: stack is empty\n" RESET);)
         stk->errorStatus |= EMPTY_STACK;
         stackErrorDump(*stk);
         return POISON;
@@ -156,7 +162,8 @@ StackElem_t stackPop(Stack_t* stk)
 
     if (stk->size < stk->capacity / (REDUCER_CAPACITY * stk->coefCapacity) && stk->capacity > START_SIZE)
     {
-        CAN_PR(
+        S_CAN_PR
+        (
             stk->data[0] = POISON; // REMOVING THE OLD LEFT CANARY
             stk->data[stk->capacity - 1] = POISON; // REMOVING RIGHT CANARY LINE (CHANGE TO POISON)
         )
@@ -170,7 +177,8 @@ StackElem_t stackPop(Stack_t* stk)
             
             stk->errorStatus |= ALLOC_ERROR;
             
-            CAN_PR(
+            S_CAN_PR
+            (
                 stk->data[0] = L_DATA_KANAR;
                 stk->data[stk->capacity - 1] = R_DATA_KANAR;
             )
@@ -181,7 +189,8 @@ StackElem_t stackPop(Stack_t* stk)
             stk->data = newData;
             stk->capacity = newCapacity;
             
-            CAN_PR(
+            S_CAN_PR
+            (
                 stk->data[0] = L_DATA_KANAR;
                 stk->data[stk->capacity - 1] = R_DATA_KANAR;
                 
@@ -193,7 +202,7 @@ StackElem_t stackPop(Stack_t* stk)
 
     if (stackVerify(stk) != OK)
     {
-        DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
+        S_DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
         stackDump(*stk);
         stackErrorDump(*stk);
     }
@@ -205,14 +214,14 @@ StackElem_t stackGet(const Stack_t* stk)
 {
     if (!stk) 
     {
-        DBG(fprintf(stderr, RED "Error: nullptr passed to stackGet\n" RESET);)
+        S_DBG(fprintf(stderr, RED "Error: nullptr passed to stackGet\n" RESET);)
         return POISON;
     }
 
     StackError verifyError = (StackError)stackVerify(const_cast<Stack_t*>(stk));
     if (verifyError != OK) // Checking the Status of the Stack
     {
-        DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
+        S_DBG(fprintf(stderr, RED "Error: verifyError != OK\n" RESET);)
         stackDump(*stk);
         stackErrorDump(*stk);
         return POISON;
@@ -220,7 +229,7 @@ StackElem_t stackGet(const Stack_t* stk)
 
     if (stk->size == 0) 
     {
-        DBG(printf(RED "STACK IS EMPTY\n" RESET);)
+        S_DBG(printf(RED "STACK IS EMPTY\n" RESET);)
         (const_cast<Stack_t*>(stk))->errorStatus |= EMPTY_STACK;
         return POISON;
     }
@@ -238,18 +247,18 @@ static void stackDataDump(Stack_t stk)
     printf("%s}%s\n", GREEN, RESET);
     
     printf("%sstk.data%s[%s0%s]            = %s%lg %s[ %shex%s %X%s ]%s", BLUE, GREEN, MANG, GREEN, RED, stk.data[0], MANG, BLUE, RED, (unsigned int)stk.data[0], MANG, RESET);
-    CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (unsigned int)L_DATA_KANAR, MANG, RESET);)
+    S_CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (unsigned int)L_DATA_KANAR, MANG, RESET);)
     putchar('\n');
     printf("%sstk.data%s[%scapacity - 1%s] = %s%lg %s[ %shex%s %X%s ]%s", BLUE, GREEN, MANG, GREEN, RED, stk.data[stk.capacity - 1], MANG, BLUE, RED, (unsigned int)stk.data[stk.capacity - 1], MANG, RESET);
-    CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (unsigned int)R_DATA_KANAR, MANG, RESET);)
+    S_CAN_PR(printf(" %s[%strue hex%s %X %s]%s", MANG, BLUE, RED, (unsigned int)R_DATA_KANAR, MANG, RESET);)
     putchar('\n');
 }
 
 void stackDump(Stack_t stk)
 {
     printf("%s___stackDump___~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%s\n", RED, RESET);
-    CAN_PR(printf("%s{%sL_STACK_KANAR %s= %s%X%s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.leftStackCanary, RESET);)
-    CAN_PR(printf("%s, %sR_STACK_KANAR %s= %s%X%s}%s\n", GREEN, BLUE, GREEN, RED, (unsigned int)stk.rightStackCanary, GREEN, RESET);)
+    S_CAN_PR(printf("%s{%sL_STACK_KANAR %s= %s%X%s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.leftStackCanary, RESET);)
+    S_CAN_PR(printf("%s, %sR_STACK_KANAR %s= %s%X%s}%s\n", GREEN, BLUE, GREEN, RED, (unsigned int)stk.rightStackCanary, GREEN, RESET);)
     printf("%s{%sL_DATA_KANAR %s = %s%X%s, %s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.data[0], GREEN, RESET);
     printf("%sR_DATA_KANAR %s = %s%X%s}%s\n", BLUE, GREEN, RED, (unsigned int)stk.data[stk.capacity - 1], GREEN, RESET);
 
@@ -271,7 +280,7 @@ uint64_t stackVerify(Stack_t* stk)
     if (stk->size > stk->capacity - 2)  // -2 for canaries
         errors |= SIZE_ERROR;
     
-    CAN_PR
+    S_CAN_PR
     (
         if (fabs(stk->leftStackCanary - L_STACK_KANAR) > DOUBLE_EPSILON)
             errors |= LEFT_STACK_CANARY_DIED;
@@ -315,7 +324,8 @@ static const char* stackErrors[9] = {
                                         "LEFT_STACK_CANARY_DIED",
                                         "RIGHT_STACK_CANARY_DIED",
                                         "LEFT_DATA_CANARY_DIED",
-                                        "RIGHT_DATA_CANARY_DIED"
+                                        "RIGHT_DATA_CANARY_DIED",
+                                        "EMPTY_STACK"
                                     };
 StackError stackErrorDump(Stack_t stk)
 {
