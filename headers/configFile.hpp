@@ -7,7 +7,7 @@
 // Enable stack in canary protection mode
 #define STACK_CANARY_PROTECTION
 
-// Enable stack verifier (slows down the work, but checks for errors)
-#define STACK_VERIFY
+// Enable stack verifier (slows down the work, but checks for errors)      -------->       // в разработке
+//#define STACK_VERIFY
 
 #endif
