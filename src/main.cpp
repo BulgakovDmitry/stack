@@ -6,13 +6,19 @@ int main(void)
     stackCtor(&stk);
     
     stackPush(&stk, 5);
-    stackPush(&stk, 6);
-    stackPush(&stk, 7);
+    //stackPush(&stk, 6);
+    //stackPush(&stk, 7);
     
-    /*for (int i = 0; i < 11; i++)
-        stackPush(&stk, (double)i);
+    //for (int i = 8; i < 20; i++)
+    //    stackPush(&stk, (double)i);
 
-    stackPush(&stk, 11);
+    //stackPush(&stk, 36);
+
+    //for (int q = 0; q < 18; q++)
+        //stackPop(&stk);
+
+    //stackPush(&stk, 19);
+    /*stackPush(&stk, 11);
     stackPush(&stk, 12);
     stackPush(&stk, 13);
     stackPush(&stk, 14);
@@ -22,7 +28,7 @@ int main(void)
     stackPop(&stk);
     stackPop(&stk);
     stackPop(&stk);*/
-    stackPop(&stk);
+    //stackPop(&stk);
     
 
 

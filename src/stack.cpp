@@ -3,14 +3,14 @@
 #include <math.h>
 
 static void stackDataDump(Stack_t stk);
-S_CAN_PR
-(
+
+#ifdef STACK_CANARY_PROTECTION
     static bool doubleCmp           (double a, double b); 
     static void installDataCanaries (Stack_t* stk);
     static void removeDataCanaries  (Stack_t* stk);
     static void installStackCanaries(Stack_t* stk);
     static void removeStackCanaries (Stack_t* stk);
-)
+#endif
 
 #define VERIFICATION(...)                                                 \
 do                                                                        \
@@ -24,8 +24,7 @@ do                                                                        \
     }                                                                     \
 } while (0)          
 
-S_CAN_PR
-(
+#ifdef STACK_CANARY_PROTECTION
     static bool doubleCmp(double a, double b) 
     {
         return fabs(a - b) > DOUBLE_EPSILON;
@@ -57,7 +56,7 @@ S_CAN_PR
         stk->leftStackCanary = 0;                      // REMOVING THE OLD LEFT  CANARY (CHANGE TO 0)
         stk->rightStackCanary = 0;                     // REMOVING THE OLD RIGHT CANARY (CHANGE TO 0)
     }
-)
+#endif
 
 void stackCtor(Stack_t* stk)
 {
@@ -138,7 +137,7 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         for (size_t i = stk->size + 1; i < stk->capacity - 1; i++) // Initialize new memory
             stk->data[i] = POISON;
 
-        S_CAN_PR(installDataCanaries(stk);)
+            S_CAN_PR(installDataCanaries(stk);)
     }    
    
     stk->size++;
@@ -187,20 +186,18 @@ StackElem_t stackPop(Stack_t* stk)
             stk->errorStatus |= ALLOC_ERROR;
             
             S_CAN_PR(installDataCanaries(stk);)
-            
         }
         else
         {
             stk->data = newData;
             stk->capacity = newCapacity;
             
-            S_CAN_PR
-            (
+            #ifdef STACK_CANARY_PROTECTION
                 installDataCanaries(stk);
                 
                 for (size_t i = stk->size + 1; i < stk->capacity - 1; i++) // Initialized "empty" elements as POISON
                     stk->data[i] = POISON;
-            )
+            #endif
         }
     }
 
@@ -253,14 +250,13 @@ static void stackDataDump(Stack_t stk)
 void stackDump(Stack_t stk)
 {
     printf("%s___stackDump___~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%s\n", RED, RESET);
-    S_CAN_PR
-    (
+    #ifdef STACK_CANARY_PROTECTION
         printf("%s{%sL_STACK_KANAR %s= %s%X%s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.leftStackCanary, RESET);
         printf("%s, %sR_STACK_KANAR %s= %s%X%s}%s\n", GREEN, BLUE, GREEN, RED, (unsigned int)stk.rightStackCanary, GREEN, RESET);
     
         printf("%s{%sL_DATA_KANAR %s = %s%X%s, %s", GREEN, BLUE, GREEN, RED, (unsigned int)stk.data[0], GREEN, RESET);
         printf("%sR_DATA_KANAR %s = %s%X%s}%s\n", BLUE, GREEN, RED, (unsigned int)stk.data[stk.capacity - 1], GREEN, RESET);
-    )
+    #endif
 
     printf("%scapasity %s= %s%zu%s  ", BLUE, GREEN, RED, stk.capacity, RESET);
     printf("%ssize %s= %s%zu%s\n", BLUE, GREEN, RED, stk.size, RESET);
@@ -281,8 +277,7 @@ uint64_t stackVerify(Stack_t* stk)
     if (stk->size > stk->capacity - 2)  // -2 for canaries
         errors |= SIZE_ERROR;
     
-    S_CAN_PR
-    (
+    #ifdef STACK_CANARY_PROTECTION
         if (doubleCmp(stk->leftStackCanary, L_STACK_KANAR))
             errors |= LEFT_STACK_CANARY_DIED;
             
@@ -312,7 +307,7 @@ uint64_t stackVerify(Stack_t* stk)
             }
         }
 
-    )
+    #endif
         
     stk->errorStatus = errors;
     return (StackError)errors;

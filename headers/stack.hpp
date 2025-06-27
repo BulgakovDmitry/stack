@@ -28,8 +28,6 @@ typedef double Canary_t;
     #define S_VER(...)
 #endif
 
-#define UP_TO_EIGHT(x) (x) + (8 - (x) % 8) % 8
-
 struct Stack_t
 {
     S_CAN_PR(Canary_t leftStackCanary;)
