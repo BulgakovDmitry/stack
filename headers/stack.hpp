@@ -28,6 +28,12 @@ typedef double Canary_t;
     #define S_VER(...)
 #endif
 
+#ifdef HASH_PROTECTION
+    #define S_HASH_PR(...) __VA_ARGS__
+#else
+    #define S_HASH_PR(...)
+#endif
+
 struct Stack_t
 {
     S_CAN_PR(Canary_t leftStackCanary;)
@@ -38,6 +44,11 @@ struct Stack_t
     StackElem_t* data;
     size_t       size;
     size_t       capacity;
+
+    #ifdef STACK_HASH_PROTECTION
+    uint64_t dataHashSum;
+    uint64_t stackHashSum;
+    #endif
 
     S_CAN_PR(Canary_t rightStackCanary;)
 };
@@ -52,14 +63,17 @@ enum StackError
     RIGHT_STACK_CANARY_DIED = 1 << 4,
     LEFT_DATA_CANARY_DIED   = 1 << 5,
     RIGHT_DATA_CANARY_DIED  = 1 << 6,
-    EMPTY_STACK             = 1 << 7
+    EMPTY_STACK             = 1 << 7,
+    STACK_HASH_ERROR        = 1 << 8,
+    DATA_HASH_ERROR         = 1 << 9,
 };
 
-const size_t NUMBER_OF_ERRORS = 8;
+const size_t NUMBER_OF_ERRORS = 10;
 
 const size_t START_SIZE       = 16;
 const StackElem_t POISON      = -666;
 const size_t REDUCER_CAPACITY = 2;
+const uint64_t HASH_COEFF     = 33;
 const double DOUBLE_EPSILON  = 1e-9;
 
 const Canary_t L_DATA_KANAR  = 0xEDAA;

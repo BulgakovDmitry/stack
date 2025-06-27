@@ -10,4 +10,7 @@
 // Enable stack verifier (slows down the work, but checks for errors)      -------->       // в разработке
 //#define STACK_VERIFY
 
+// Enable stack in hash protection mode
+#define STACK_HASH_PROTECTION
+
 #endif
