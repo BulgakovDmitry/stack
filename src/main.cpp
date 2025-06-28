@@ -5,9 +5,11 @@ int main(void)
     Stack_t stk = {};
     stackCtor(&stk);
     
-    stackPush(&stk, 5);
-    stackPush(&stk, 6);
-    stackPop(&stk);
+    for (int i = 0; i < 16; i++)
+        stackPush(&stk, i + 1);
+
+    for (int j = 0; j < 9; j++)
+        stackPop(&stk);
 
     stackDump(stk);
     stackDtor(&stk);

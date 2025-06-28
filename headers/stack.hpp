@@ -22,13 +22,7 @@ typedef double Canary_t;
     #define S_CAN_PR(...)
 #endif
 
-#ifdef STACK_VERIFY
-    #define S_VER(...) __VA_ARGS__
-#else
-    #define S_VER(...)
-#endif
-
-#ifdef HASH_PROTECTION
+#ifdef STACK_HASH_PROTECTION
     #define S_HASH_PR(...) __VA_ARGS__
 #else
     #define S_HASH_PR(...)
@@ -66,9 +60,10 @@ enum StackError
     EMPTY_STACK             = 1 << 7,
     STACK_HASH_ERROR        = 1 << 8,
     DATA_HASH_ERROR         = 1 << 9,
+    INIT_HASH_ERROR         = 1 << 10,   
+    REHASH_ERROR            = 1 << 11,  
+    NUMBER_OF_ERRORS
 };
-
-const size_t NUMBER_OF_ERRORS = 10;
 
 const size_t START_SIZE       = 16;
 const StackElem_t POISON      = -666;

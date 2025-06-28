@@ -38,6 +38,7 @@ static bool doubleCmp(double a, double b)
 static void installDataCanaries(Stack_t* stk)
 {
     S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
+
     stk->data[0]                 = L_DATA_KANAR;   // INSTALLING A NEW LEFT  CANARY ON DATA
     stk->data[stk->capacity - 1] = R_DATA_KANAR;   // INSTALLING A NEW RIGHT CANARY ON DATA
 }
@@ -45,12 +46,14 @@ static void installDataCanaries(Stack_t* stk)
 static void removeDataCanaries(Stack_t* stk)
 {
     S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
+
     stk->data[0] = POISON;                         // REMOVING THE OLD LEFT  CANARY (CHANGE TO POISON)
     stk->data[stk->capacity - 1] = POISON;         // REMOVING THE OLD RIGHT CANARY (CHANGE TO POISON)
 }
 static void installStackCanaries(Stack_t* stk)
 {
     S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
+
     stk->leftStackCanary = L_STACK_KANAR;          // INSTALLING A NEW LEFT  CANARY ON STACK
     stk->rightStackCanary = R_STACK_KANAR;         // INSTALLING A NEW RIGHT CANARY ON STACK
 }
@@ -58,6 +61,7 @@ static void installStackCanaries(Stack_t* stk)
 static void removeStackCanaries(Stack_t* stk)
 {
     S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
+
     stk->leftStackCanary = 0;                      // REMOVING THE OLD LEFT  CANARY (CHANGE TO 0)
     stk->rightStackCanary = 0;                     // REMOVING THE OLD RIGHT CANARY (CHANGE TO 0)
 }
@@ -66,9 +70,9 @@ static void removeStackCanaries(Stack_t* stk)
 #ifdef STACK_HASH_PROTECTION
 static uint64_t stackDataHashCalc(const char* start, const char* end)
 {
-    DBG(ASSERT(start, "start = nulptr", stderr);)
-    DBG(ASSERT(end,   "end = nulptr", stderr);)
-    DBG(bool check = end > start; ASSERT(check, "end > start", stderr);)
+    S_DBG(ASSERT(start, "start = nulptr", stderr);)
+    S_DBG(ASSERT(end,   "end = nulptr", stderr);)
+    S_DBG(bool check = end > start; ASSERT(check, "end > start", stderr);)
 
     uint64_t hashSum = 5381;
     char* current = const_cast<char*>(start);
@@ -82,12 +86,18 @@ static uint64_t stackDataHashCalc(const char* start, const char* end)
 
 static uint64_t stackStructHashCalc(const Stack_t* stk) 
 {
-    uint64_t hash = 5381;
-    const char* ptr = reinterpret_cast<const char*>(&stk->coefCapacity);
-    size_t size = sizeof(stk->coefCapacity) + sizeof(stk->size) + sizeof(stk->capacity);
-    
-    for (size_t i = 0; i < size; i++)
-        hash += hash * HASH_COEFF + static_cast<unsigned char>(ptr[i]);
+    S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
+
+    Stack_t tmp = *stk;               // local copy
+    tmp.dataHashSum  = 0;             // to keep it out of the hash
+    tmp.stackHashSum = 0;
+
+    const unsigned char* bytes = reinterpret_cast<const unsigned char*>(&tmp);
+    const size_t         size  = sizeof(tmp);
+
+    uint64_t hash = 5381u;                     
+    for (size_t i = 0; i < size; ++i)
+        hash = (hash * HASH_COEFF) + bytes[i];
 
     return hash;
 }
@@ -97,15 +107,20 @@ void stackCtor(Stack_t* stk)
 {
     S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
     
+    memset(stk, 0, sizeof(*stk)); // Zeroize the structure to prevent garbage from getting into the hash
+
     S_CAN_PR(installStackCanaries(stk);)
     
     stk->coefCapacity = 2;
     stk->size = 0;
     stk->capacity = START_SIZE;
-    stk->data = 0;
 
     stk->data = (StackElem_t*)calloc(stk->capacity, sizeof(StackElem_t));
-    S_DBG(ASSERT(stk->data, "data = nullptr", stderr);)
+    if (!stk->data)
+    {
+        stk->errorStatus = ALLOC_ERROR;
+        return;
+    }
 
     S_CAN_PR(installDataCanaries(stk);)
 
@@ -118,33 +133,26 @@ void stackCtor(Stack_t* stk)
     #endif
 
     StackError verifyError = (StackError)stackVerify(stk);
-    VERIFICATION(exit(1););
-
+    if (verifyError != OK)
+    {
+        stk->errorStatus |= INIT_HASH_ERROR;
+        stackDump(*stk);
+        stackErrorDump(*stk);
+    }
 }
 
 void stackDtor(Stack_t* stk)
 {
-    if (!stk) 
-    {
-        S_DBG(fprintf(stderr, RED "stk = nullptr, it is impossible to delete null stack\n" RESET);)
-        return;
-    }
+    S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
 
-    if (stk->data)
-        FREE(stk->data);
-    S_DBG
-    (
-        else
-        fprintf(stderr, RED"stk->data = nullptr"RESET);
-    )
-
-    stk->coefCapacity = 0;
-    stk->size = 0;
-    stk->capacity = 0;
-
+    S_CAN_PR(removeDataCanaries(stk);)
+    
+    FREE(stk->data);
+    
     S_CAN_PR(removeStackCanaries(stk);)
 
-    stk->errorStatus = OK;
+    S_HASH_PR(stk->dataHashSum = 0; stk->stackHashSum = 0;)
+    memset(stk, 0, sizeof(*stk));
 }
 
 StackError stackPush(Stack_t* stk, StackElem_t value)
@@ -162,16 +170,22 @@ StackError stackPush(Stack_t* stk, StackElem_t value)
         S_CAN_PR(removeDataCanaries(stk);)
 
         size_t newCapacity = stk->capacity * stk->coefCapacity;
-        StackElem_t* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
+        void* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
         if (!newData)
         {
             S_CAN_PR(installDataCanaries(stk);)
             
             stk->errorStatus |= ALLOC_ERROR;
+
+            #ifdef STACK_HASH_PROTECTION
+                stk->dataHashSum  = stackDataHashCalc(reinterpret_cast<char*>(stk->data), reinterpret_cast<char*>(stk->data + stk->capacity));
+                stk->stackHashSum = stackStructHashCalc(stk);
+            #endif
+
             return ALLOC_ERROR;
         }
 
-        stk->data = newData;
+        stk->data = (StackElem_t*)newData;
         stk->capacity = newCapacity;
         
         for (size_t i = stk->size + 1; i < stk->capacity - 1; i++) // Initialize new memory
@@ -223,7 +237,7 @@ StackElem_t stackPop(Stack_t* stk)
         
         size_t newCapacity = stk->capacity / stk->coefCapacity;
 
-        StackElem_t* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
+        void* newData = (StackElem_t*)realloc(stk->data, newCapacity * sizeof(StackElem_t));
         if (!newData)
         {
             stk->capacity *= stk->coefCapacity; // save the old capacity (since realloc failed)
@@ -231,16 +245,20 @@ StackElem_t stackPop(Stack_t* stk)
             stk->errorStatus |= ALLOC_ERROR;
             
             S_CAN_PR(installDataCanaries(stk);)
+
+            #ifdef STACK_HASH_PROTECTION
+                stk->dataHashSum  = stackDataHashCalc(reinterpret_cast<char*>(stk->data), reinterpret_cast<char*>(stk->data + stk->capacity));
+                stk->stackHashSum = stackStructHashCalc(stk);
+            #endif
+
+            return temp;
         }
         else
         {
-            stk->data = newData;
+            stk->data = (StackElem_t*)newData;
             stk->capacity = newCapacity;
             
             S_CAN_PR(installDataCanaries(stk);)
-
-            for (size_t i = stk->size + 1; i < stk->capacity - 1; i++) // Initialized "empty" elements as POISON
-                stk->data[i] = POISON;
         }
     }
 
@@ -335,6 +353,8 @@ void stackDump(Stack_t stk)
 
 uint64_t stackVerify(Stack_t* stk)
 {
+    S_DBG(ASSERT(stk, "stk = nullptr", stderr);)
+    
     if (!stk)
         return POINTER_ERROR;
     
@@ -393,7 +413,9 @@ static const char* stackErrors[NUMBER_OF_ERRORS] = {
                                                     "RIGHT_DATA_CANARY_DIED",
                                                     "EMPTY_STACK",
                                                     "STACK_HASH_ERROR",
-                                                    "DATA_HASH_ERROR"
+                                                    "DATA_HASH_ERROR",
+                                                    "INIT_HASH_ERROR",   
+                                                    "REHASH_ERROR"
                                                    };
 StackError stackErrorDump(Stack_t stk)
 {
