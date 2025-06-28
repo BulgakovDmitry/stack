@@ -23,7 +23,7 @@ Structure definition:
 ```cpp
 struct Stack_t
 {
-    S_CAN_PR(Canary_t leftStackCanary;)  // Left canary (enabled with canary protection)
+    S_CAN_PR(Canary_t leftStackCanary;) // Left canary (enabled with canary protection)
 
     size_t   coefCapacity;
     uint64_t errorStatus;
@@ -31,6 +31,11 @@ struct Stack_t
     StackElem_t* data;
     size_t       size;
     size_t       capacity;
+
+    #ifdef STACK_HASH_PROTECTION
+    uint64_t dataHashSum;
+    uint64_t stackHashSum;
+    #endif
 
     S_CAN_PR(Canary_t rightStackCanary;) // Right canary (enabled with canary protection)
 };
@@ -42,6 +47,7 @@ struct Stack_t
 | `Verifier`             | Check stack integrity       |
 | `POISON values`        | Detect uninitialized access |
 | `Detailed dump`        | Error state visualization   |
+| `Hash protection`      | Data change detection       |
 
 ## 📂 Project Structure
 ```
