@@ -61,7 +61,6 @@ enum StackError
     STACK_HASH_ERROR        = 1 << 8,
     DATA_HASH_ERROR         = 1 << 9,
     INIT_HASH_ERROR         = 1 << 10,   
-    REHASH_ERROR            = 1 << 11,  
     NUMBER_OF_ERRORS
 };
 

@@ -415,7 +415,6 @@ static const char* stackErrors[NUMBER_OF_ERRORS] = {
                                                     "STACK_HASH_ERROR",
                                                     "DATA_HASH_ERROR",
                                                     "INIT_HASH_ERROR",   
-                                                    "REHASH_ERROR"
                                                    };
 StackError stackErrorDump(Stack_t stk)
 {
