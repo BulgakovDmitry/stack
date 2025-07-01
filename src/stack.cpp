@@ -5,7 +5,6 @@
 static void stackDataDump(Stack_t stk);
 
 #ifdef STACK_CANARY_PROTECTION
-static bool doubleCmp           (double a, double b); 
 static void installDataCanaries (Stack_t* stk);
 static void removeDataCanaries  (Stack_t* stk);
 static void installStackCanaries(Stack_t* stk);
@@ -30,10 +29,6 @@ do                                                                        \
 } while (0)          
 
 #ifdef STACK_CANARY_PROTECTION
-static bool doubleCmp(double a, double b) 
-{
-    return fabs(a - b) > DOUBLE_EPSILON;
-}
 
 static void installDataCanaries(Stack_t* stk)
 {
@@ -364,10 +359,10 @@ uint64_t stackVerify(Stack_t* stk)
         errors |= SIZE_ERROR;
     
     #ifdef STACK_CANARY_PROTECTION
-    if (doubleCmp(stk->leftStackCanary, L_STACK_KANAR))
+    if (!doubleCmp(stk->leftStackCanary, L_STACK_KANAR))
         errors |= LEFT_STACK_CANARY_DIED;
         
-    if (doubleCmp(stk->rightStackCanary, R_STACK_KANAR))
+    if (!doubleCmp(stk->rightStackCanary, R_STACK_KANAR))
         errors |= RIGHT_STACK_CANARY_DIED;
     
     if (!stk->data)
@@ -377,10 +372,10 @@ uint64_t stackVerify(Stack_t* stk)
     }
     else 
     {
-        if (doubleCmp(stk->data[0], L_DATA_KANAR))                  // check left data canary
+        if (!doubleCmp(stk->data[0], L_DATA_KANAR))                  // check left data canary
             errors |= LEFT_DATA_CANARY_DIED;                        // 
             
-        if (doubleCmp(stk->data[stk->capacity - 1], R_DATA_KANAR))  // check right data canary
+        if (!doubleCmp(stk->data[stk->capacity - 1], R_DATA_KANAR))  // check right data canary
             errors |= RIGHT_DATA_CANARY_DIED;                       // 
     }
     #endif
