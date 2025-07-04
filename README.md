@@ -12,7 +12,7 @@ To build the project:
 ```cpp
 git clone https://github.com/BulgakovDmitry/stack
 cd stack
-make clean && make run
+make run
 ./structStack.out
 ```
 
