@@ -68,7 +68,6 @@ const size_t START_SIZE       = 16;
 const StackElem_t POISON      = -666;
 const size_t REDUCER_CAPACITY = 2;
 const uint64_t HASH_COEFF     = 33;
-const double DOUBLE_EPSILON  = 1e-9;
 
 const Canary_t L_DATA_KANAR  = 0xEDAA;
 const Canary_t R_DATA_KANAR  = 0xF00D;
